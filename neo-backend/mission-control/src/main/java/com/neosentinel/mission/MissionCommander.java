@@ -14,6 +14,7 @@ public class MissionCommander {
     }
 
     @RabbitListener(queuesToDeclare = @org.springframework.amqp.rabbit.annotation.Queue("hazard.alerts"))
+    @CacheEvict(value = "alerts", allEntries = true)
     public void handleAlert(String message) {
         System.out.println("Mission Control: Received Alert -> " + message);
 

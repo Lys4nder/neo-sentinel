@@ -17,6 +17,7 @@ public class MissionController {
     }
 
     @GetMapping("/alerts")
+    @Cacheable(value = "alerts", key = "'all_alerts'")
     public List<Alert> getAllAlerts() {
         return alertRepository.findAll();
     }
