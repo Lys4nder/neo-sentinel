@@ -1,0 +1,19 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: mission-control
+  datasource:
+    url: jdbc:postgresql://localhost:5432/neo_sentinel
+    username: neo_user
+    password: neo_password
+  jpa:
+    hibernate:
+      ddl-auto: update  # Automatically creates the 'alerts' table
+    show-sql: false
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin

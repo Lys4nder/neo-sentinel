@@ -1,0 +1,18 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: hazard-analyzer
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: hazard-group-v2
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin

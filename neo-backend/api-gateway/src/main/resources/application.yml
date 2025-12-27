@@ -1,0 +1,38 @@
+
+server:
+  port: 8080  # The ONE port to rule them all
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # Enable CORS (Cross-Origin Resource Sharing) globally
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: "http://localhost:4200" # Your Angular App will run here
+                allowedMethods: "*"
+                allowedHeaders: "*"
+          routes:
+            # Route 1: Mission Control (Alerts)
+            - id: mission-service
+              uri: http://localhost:8083
+              predicates:
+                - Path=/api/mission/**
+
+            # Route 2: Telemetry Ingest (Optional, if you want to POST data manually)
+            - id: ingest-service
+              uri: http://localhost:8081
+              predicates:
+                - Path=/api/ingest/**
+                  
+            # Route 3: Python FaaS (Impact Calculator)
+            - id: faas-impact
+              uri: http://localhost:5001
+              predicates:
+                - Path=/api/impact/**
+              filters:
+                - RewritePath=/api/impact/(?<segment>.*), /$\{segment}
