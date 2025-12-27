@@ -2,8 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { MissionService, Alert, isDangerous } from '../services/mission';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -130,7 +129,6 @@ export class DashboardComponent implements OnInit {
         this.error = null;
         this.cdr.detectChanges();
         
-        // Calculate impact for alerts with telemetry data
         this.calculateImpacts();
       },
       error: err => {
@@ -148,30 +146,15 @@ export class DashboardComponent implements OnInit {
     
     if (alertsWithTelemetry.length === 0) return;
     
-    // Try API call with fallback to local calculation
+    // Call Python API for each alert
     const requests = alertsWithTelemetry.map(alert => 
-      this.missionService.calculateImpact(alert).pipe(
-        catchError(err => {
-          console.warn('Impact API failed, using local calculation:', err.message);
-          // Fallback: calculate locally
-          const kilotons = this.calculateLocalImpact(alert.diameterM!, alert.velocityKmS!);
-          return of({
-            id: alert.id?.toString() || '',
-            name: alert.name || '',
-            distanceKm: alert.distanceKm || 0,
-            asteroid_size: `${alert.diameterM} meters`,
-            impact_energy: `${kilotons.toFixed(2)} Kilotons of TNT`,
-            status: kilotons > 1000 ? 'CATASTROPHIC' as const : 'MANAGEABLE' as const
-          });
-        })
-      )
+      this.missionService.calculateImpact(alert)
     );
     
     forkJoin(requests).subscribe({
       next: results => {
         results.forEach((result, index) => {
           const alert = alertsWithTelemetry[index];
-          // Parse "123.45 Kilotons of TNT" to get the number
           const energyMatch = result.impact_energy.match(/([\d.]+)/);
           alert.impactEnergy = energyMatch ? parseFloat(energyMatch[1]) : 0;
           alert.status = result.status;
@@ -182,16 +165,6 @@ export class DashboardComponent implements OnInit {
         console.error('Failed to calculate impacts:', err);
       }
     });
-  }
-
-  // Local fallback calculation (same physics as Python)
-  calculateLocalImpact(diameterM: number, velocityKmS: number): number {
-    const radius = diameterM / 2;
-    const volume = (4 / 3) * Math.PI * Math.pow(radius, 3);
-    const massKg = volume * 3000; // density ~3000 kg/m^3
-    const velocityMs = velocityKmS * 1000;
-    const kineticEnergyJoules = 0.5 * massKg * Math.pow(velocityMs, 2);
-    return kineticEnergyJoules / (4.184e12); // Convert to kilotons
   }
 
   checkDangerous(alert: Alert): boolean {

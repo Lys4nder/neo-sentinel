@@ -29,7 +29,6 @@ export function isDangerous(alert: Alert): boolean {
   if (alert.status) {
     return alert.status === 'CATASTROPHIC' || (alert.distanceKm !== undefined && alert.distanceKm < 40000);
   }
-  // Fallback if status not yet calculated
   return alert.distanceKm !== undefined && alert.distanceKm < 40000;
 }
 
@@ -50,11 +49,8 @@ export class MissionService {
 
   calculateImpact(alert: Alert): Observable<ImpactResult> {
     return this.http.post<ImpactResult>(this.impactUrl, {
-      id: alert.id?.toString(),
-      name: alert.name,
-      distanceKm: alert.distanceKm,
-      velocityKmS: alert.velocityKmS,
-      diameterM: alert.diameterM
+      velocity: alert.velocityKmS,
+      diameter: alert.diameterM
     });
   }
 }
