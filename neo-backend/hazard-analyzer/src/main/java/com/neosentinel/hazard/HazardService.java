@@ -1,6 +1,6 @@
 package com.neosentinel.hazard;
 
-import com.fasterxml.jackson.databind.ObjectMapper; // Import this
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -24,8 +24,18 @@ public class HazardService {
 
             if (data.distanceKm() < 40000) {
                 System.err.println("CRITICAL HAZARD DETECTED! Sending Alert to RabbitMQ...");
-                String alertMsg = "COLLISION WARNING: " + data.name() + " is " + (int)data.distanceKm() + "km away!";
-                rabbitTemplate.convertAndSend("hazard.alerts", alertMsg);
+                String alertMsg = "COLLISION WARNING: " + data.name() + " is " + (int)data.distanceKm() + "km away with a diameter of " + (int)data.diameterM() + " meters!";
+                
+                // Send structured alert with all telemetry data
+                HazardAlert alert = new HazardAlert(
+                    alertMsg,
+                    data.name(),
+                    data.distanceKm(),
+                    data.velocityKmS(),
+                    data.diameterM()
+                );
+                String alertJson = objectMapper.writeValueAsString(alert);
+                rabbitTemplate.convertAndSend("hazard.alerts", alertJson);
             }
         } catch (Exception e) {
             System.err.println("Error parsing JSON: " + e.getMessage());
@@ -33,4 +43,6 @@ public class HazardService {
     }
 }
 
-record AsteroidTelemetry(String id, String name, double distanceKm, double velocityKmS) {}
+record AsteroidTelemetry(String id, String name, double distanceKm, double velocityKmS, double diameterM) {}
+
+record HazardAlert(String message, String name, double distanceKm, double velocityKmS, double diameterM) {}
