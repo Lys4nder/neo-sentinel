@@ -10,9 +10,9 @@ import { forkJoin } from 'rxjs';
   imports: [CommonModule, HttpClientModule],
   template: `
     <div class="container">
-      <h1>🛡️ Mission Control Dashboard</h1>
+      <h1>🛡️ Mission Control Dashboard 🛡️</h1>
       
-      <h2>📡 Live Hazard Feed</h2>
+      <h2>Live Hazard Feed</h2>
       
       <p *ngIf="loading">Loading alerts...</p>
       <p *ngIf="error" class="error">{{ error }}</p>
@@ -146,7 +146,6 @@ export class DashboardComponent implements OnInit {
     
     if (alertsWithTelemetry.length === 0) return;
     
-    // Call Python API for each alert
     const requests = alertsWithTelemetry.map(alert => 
       this.missionService.calculateImpact(alert)
     );
