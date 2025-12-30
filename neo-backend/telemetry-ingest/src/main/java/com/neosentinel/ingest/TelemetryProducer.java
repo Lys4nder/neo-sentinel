@@ -23,12 +23,13 @@ public class TelemetryProducer {
                 UUID.randomUUID().toString(),
                 "2025-BF",
                 random.nextDouble() * 100000,
-                random.nextDouble() * 20
+                random.nextDouble() * 20,
+                random.nextDouble() * 500 + 10  // diameter between 10-510 meters
         );
         System.out.println("SENT: " + data + "; id = " + data.id());
         kafkaTemplate.send("asteroid.stream", data.id(), data);
 
     }
 
-    record AsteroidTelemetry(String id, String name, double distanceKm, double velocityKmS) {}
+    record AsteroidTelemetry(String id, String name, double distanceKm, double velocityKmS, double diameterM) {}
 }

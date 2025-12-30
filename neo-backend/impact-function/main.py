@@ -4,11 +4,20 @@ app = Flask(__name__)
 
 @app.route('/calculate', methods=['POST'])
 def calculate_impact():
-    data = request.json
+    # Use get_json with force=True to parse JSON regardless of Content-Type
+    data = request.get_json(force=True) or {}
+    
+    # Debug: print received data
+    print(f"Received data: {data}")
 
-    # 1. Get Velocity (km/s) and Diameter (meters)
-    velocity_kms = data.get('velocity', 0)
-    diameter_m = data.get('diameter', 10) # Default to 10m if missing
+    # Fields from AsteroidTelemetry record
+    asteroid_id = data.get('id')
+    name = data.get('name')
+    distance_km = float(data.get('distanceKm') or 0)
+    velocity_kms = float(data.get('velocityKmS') or 0)
+    diameter_m = float(data.get('diameterM') or 10)  # Default to 10m if missing
+    
+    print(f"Parsed: velocity={velocity_kms} km/s, diameter={diameter_m}m")
 
     # 2. Physics Logic (Simplified)
     # Mass = Volume * Density. Assume spherical rock (density ~3000 kg/m^3)
@@ -22,11 +31,16 @@ def calculate_impact():
 
     # Convert Joules to Kilotons of TNT (1 Kiloton = 4.184 x 10^12 Joules)
     kilotons = kinetic_energy_joules / (4.184 * (10 ** 12))
+    
+    print(f"Calculated: mass={mass_kg:.0f}kg, KE={kinetic_energy_joules:.2e}J, energy={kilotons:.2f} kilotons")
 
     return jsonify({
+        "id": asteroid_id,
+        "name": name,
+        "distanceKm": distance_km,
         "asteroid_size": f"{diameter_m} meters",
         "impact_energy": f"{kilotons:.2f} Kilotons of TNT",
-        "status": "CATASTROPHIC" if kilotons > 1000 else "MANAGABLE"
+        "status": "CATASTROPHIC" if kilotons > 1000 else "MANAGEABLE"
     })
 
 if __name__ == '__main__':

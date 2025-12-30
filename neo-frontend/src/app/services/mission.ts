@@ -6,12 +6,31 @@ export interface Alert {
   id: number;
   message: string;
   timestamp: string;
+  name?: string;
+  distanceKm?: number;
+  velocityKmS?: number;
+  diameterM?: number;
+  impactEnergy?: number;
+  status?: string;
 }
 
 export interface ImpactResult {
+  id: string;
+  name: string;
+  distanceKm: number;
   asteroid_size: string;
   impact_energy: string;
-  status: string;
+  status: 'CATASTROPHIC' | 'MANAGEABLE';
+}
+
+export function isDangerous(alert: Alert): boolean {
+  if (alert.status) {
+    return alert.status === 'CATASTROPHIC';
+  }
+  if (alert.impactEnergy !== undefined) {
+    return alert.impactEnergy > 1000;
+  }
+  return false;
 }
 
 @Injectable({
@@ -25,14 +44,14 @@ export class MissionService {
 
   getAlerts(): Observable<Alert[]> {
     return this.http.get<Alert[]>(this.alertsUrl).pipe(
-      map(alerts => alerts.slice(-5))
+      map(alerts => alerts.slice(-10))
     );
   }
 
-  calculateImpact(velocity: number, diameter: number): Observable<ImpactResult> {
-    return this.http.post<ImpactResult>(this.impactUrl, { 
-      velocity: velocity, 
-      diameter: diameter 
+  calculateImpact(alert: Alert): Observable<ImpactResult> {
+    return this.http.post<ImpactResult>(this.impactUrl, {
+      velocity: alert.velocityKmS,
+      diameter: alert.diameterM
     });
   }
 }

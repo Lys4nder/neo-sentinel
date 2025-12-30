@@ -1,8 +1,8 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
-// 👇 Added ImpactResult to imports
-import { MissionService, Alert, ImpactResult } from '../services/mission';
+import { MissionService, Alert, isDangerous } from '../services/mission';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -10,74 +10,106 @@ import { MissionService, Alert, ImpactResult } from '../services/mission';
   imports: [CommonModule, HttpClientModule],
   template: `
     <div class="container">
-      <h1>👮 Mission Control Dashboard</h1>
+      <h1>🛡️ Mission Control Dashboard</h1>
       
-      <div class="grid-layout">
-        
-        <div class="column">
-          <h2>📡 Live Hazard Feed</h2>
+      <h2>📡 Live Hazard Feed</h2>
+      
+      <p *ngIf="loading">Loading alerts...</p>
+      <p *ngIf="error" class="error">{{ error }}</p>
+      <p *ngIf="!loading && !error && alerts.length === 0">No alerts at this time.</p>
+
+      <div class="alert-grid">
+        <div *ngFor="let alert of alerts" 
+             class="alert-card" 
+             [class.dangerous]="checkDangerous(alert)"
+             [class.safe]="!checkDangerous(alert)">
+          <h3>{{ checkDangerous(alert) ? '🚨 COLLISION WARNING' : '✅ MONITORING' }}</h3>
+          <p class="message">{{ alert.message }}</p>
           
-          <p *ngIf="loading">Loading alerts...</p>
-          <p *ngIf="error" class="error">{{ error }}</p>
-          <p *ngIf="!loading && !error && alerts.length === 0">No alerts at this time.</p>
-
-          <div class="alert-grid">
-            <div *ngFor="let alert of alerts" class="alert-card critical">
-              <h3>🚨 COLLISION WARNING</h3>
-              <p>{{ alert.message }}</p>
-              <small>{{ alert.timestamp }}</small>
-            </div>
+          <div class="telemetry" *ngIf="alert.diameterM || alert.velocityKmS || alert.distanceKm">
+            <span *ngIf="alert.diameterM">📏 {{ alert.diameterM | number:'1.0-0' }}m</span>
+            <span *ngIf="alert.velocityKmS">⚡ {{ alert.velocityKmS | number:'1.1-1' }} km/s</span>
+            <span *ngIf="alert.distanceKm">📍 {{ alert.distanceKm | number:'1.0-0' }} km</span>
           </div>
-        </div>
-
-        <div class="column">
-          <h2>☄️ Impact Calculator</h2>
-          <div class="calculator-card">
-            <label>Velocity (km/s):</label>
-            <input type="number" #vel placeholder="20" value="20">
-            
-            <label>Diameter (m):</label>
-            <input type="number" #dia placeholder="50" value="50">
-
-            <button (click)="calculate(vel.value, dia.value)">Analyze Impact</button>
-
-            <div *ngIf="impactResult" class="result-box" [class.danger]="impactResult.status === 'CATASTROPHIC'">
-              <h3>Analysis Complete</h3>
-              <p><strong>Energy:</strong> {{ impactResult.impact_energy }}</p>
-              <p><strong>Status:</strong> {{ impactResult.status }}</p>
-            </div>
+          
+          <div class="impact-info" *ngIf="alert.impactEnergy !== undefined">
+            <strong>Impact Energy:</strong> {{ alert.impactEnergy }} Kilotons
+            <span class="status" [class.catastrophic]="alert.status === 'CATASTROPHIC'">
+              {{ alert.status }}
+            </span>
           </div>
+          
+          <small>{{ alert.timestamp }}</small>
         </div>
-
       </div>
     </div>
   `,
   styles: [`
     .container { padding: 20px; font-family: sans-serif; max-width: 1200px; margin: 0 auto; }
-    .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    h1 { text-align: center; margin-bottom: 30px; }
+    h2 { margin-bottom: 20px; }
     
-    /* Alert Styles */
-    .alert-card { background: #ffebee; border-left: 5px solid #ef5350; padding: 15px; margin-bottom: 10px; border-radius: 4px; }
-    .critical h3 { color: #d32f2f; margin: 0 0 5px 0; }
-    .error { color: #d32f2f; }
+    .alert-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
     
-    /* Calculator Styles */
-    .calculator-card { background: #f5f5f5; padding: 20px; border-radius: 8px; border: 1px solid #ddd; }
-    input { display: block; width: 100%; padding: 8px; margin: 5px 0 15px 0; }
-    button { background: #1976d2; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 1em; }
-    button:hover { background: #1565c0; }
-
-    .result-box { margin-top: 20px; padding: 15px; background: #e8f5e9; border: 1px solid #4caf50; border-radius: 4px; }
-    .result-box.danger { background: #ffebee; border-color: #ef5350; color: #c62828; }
+    .alert-card { 
+      padding: 20px; 
+      border-radius: 8px; 
+      border-left: 5px solid;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .alert-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    
+    .alert-card.dangerous { 
+      background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); 
+      border-color: #ef5350; 
+    }
+    .alert-card.dangerous h3 { color: #c62828; }
+    
+    .alert-card.safe { 
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); 
+      border-color: #4caf50; 
+    }
+    .alert-card.safe h3 { color: #2e7d32; }
+    
+    .alert-card h3 { margin: 0 0 10px 0; font-size: 1.1em; }
+    .message { margin: 10px 0; font-weight: 500; }
+    
+    .telemetry { 
+      display: flex; 
+      gap: 15px; 
+      margin: 12px 0; 
+      font-size: 0.9em; 
+      color: #555;
+      flex-wrap: wrap;
+    }
+    
+    .impact-info { 
+      background: rgba(0,0,0,0.05); 
+      padding: 10px; 
+      border-radius: 4px; 
+      margin: 10px 0;
+      font-size: 0.9em;
+    }
+    
+    .status { 
+      display: inline-block;
+      margin-left: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 0.85em;
+    }
+    .status.catastrophic { background: #ef5350; color: white; }
+    .status:not(.catastrophic) { background: #4caf50; color: white; }
+    
+    small { display: block; margin-top: 10px; color: #777; }
+    .error { color: #d32f2f; text-align: center; }
   `]
 })
 export class DashboardComponent implements OnInit {
   alerts: Alert[] = [];
   loading = true;
   error: string | null = null;
-  
-  // 👇 Added property for result
-  impactResult: ImpactResult | null = null;
 
   constructor(
     private missionService: MissionService,
@@ -96,6 +128,8 @@ export class DashboardComponent implements OnInit {
         this.loading = false;
         this.error = null;
         this.cdr.detectChanges();
+        
+        this.calculateImpacts();
       },
       error: err => {
         this.loading = false;
@@ -105,13 +139,35 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  calculate(velocity: string, diameter: string) {
-    const v = parseFloat(velocity);
-    const d = parseFloat(diameter);
+  calculateImpacts() {
+    const alertsWithTelemetry = this.alerts.filter(
+      a => a.diameterM && a.velocityKmS && a.impactEnergy === undefined
+    );
     
-    this.missionService.calculateImpact(v, d).subscribe(result => {
-      this.impactResult = result;
-      this.cdr.detectChanges(); // Force update UI
+    if (alertsWithTelemetry.length === 0) return;
+    
+    // Call Python API for each alert
+    const requests = alertsWithTelemetry.map(alert => 
+      this.missionService.calculateImpact(alert)
+    );
+    
+    forkJoin(requests).subscribe({
+      next: results => {
+        results.forEach((result, index) => {
+          const alert = alertsWithTelemetry[index];
+          const energyMatch = result.impact_energy.match(/([\d.]+)/);
+          alert.impactEnergy = energyMatch ? parseFloat(energyMatch[1]) : 0;
+          alert.status = result.status;
+        });
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        console.error('Failed to calculate impacts:', err);
+      }
     });
+  }
+
+  checkDangerous(alert: Alert): boolean {
+    return isDangerous(alert);
   }
 }
