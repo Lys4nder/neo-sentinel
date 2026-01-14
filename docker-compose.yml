@@ -73,7 +73,7 @@ services:
 
   # --- 5. FaaS (Python Impact Calculator) ---
   impact-function:
-    build: ./impact-function
+    build: ./neo-backend/impact-function
     container_name: neo_faas
     ports:
       - "5001:5000"
@@ -83,7 +83,7 @@ services:
   # --- 6. Telemetry Ingest Service ---
   telemetry-ingest:
     build:
-      context: .
+      context: ./neo-backend
       dockerfile: telemetry-ingest/Dockerfile
     container_name: neo_telemetry
     ports:
@@ -99,7 +99,7 @@ services:
   # --- 7. Hazard Analyzer Service ---
   hazard-analyzer:
     build:
-      context: .
+      context: ./neo-backend
       dockerfile: hazard-analyzer/Dockerfile
     container_name: neo_hazard
     ports:
@@ -118,7 +118,7 @@ services:
   # --- 8. Mission Control Service ---
   mission-control:
     build:
-      context: .
+      context: ./neo-backend
       dockerfile: mission-control/Dockerfile
     container_name: neo_mission
     ports:
@@ -138,7 +138,7 @@ services:
   # --- 9. API Gateway ---
   api-gateway:
     build:
-      context: .
+      context: ./neo-backend
       dockerfile: api-gateway/Dockerfile
     container_name: neo_gateway
     ports:
@@ -151,6 +151,17 @@ services:
       - mission-control
       - telemetry-ingest
       - impact-function
+    networks:
+      - neo-network
+
+  # --- 10. Frontend (Angular + Nginx) ---
+  frontend:
+    build: ./neo-frontend
+    container_name: neo_frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api-gateway
     networks:
       - neo-network
 
