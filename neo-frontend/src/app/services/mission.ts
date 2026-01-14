@@ -50,8 +50,11 @@ export class MissionService {
 
   calculateImpact(alert: Alert): Observable<ImpactResult> {
     return this.http.post<ImpactResult>(this.impactUrl, {
-      velocity: alert.velocityKmS,
-      diameter: alert.diameterM
+      id: alert.id,
+      name: alert.name,
+      distanceKm: alert.distanceKm,
+      velocityKmS: alert.velocityKmS,
+      diameterM: alert.diameterM
     });
   }
 }
