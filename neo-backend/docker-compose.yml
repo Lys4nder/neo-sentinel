@@ -11,6 +11,11 @@ services:
       - "5432:5432"
     networks:
       - neo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neo_user -d neo_sentinel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # --- 2. Caching (Redis) ---
   redis:
@@ -33,6 +38,11 @@ services:
       RABBITMQ_DEFAULT_PASS: admin
     networks:
       - neo-network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # --- 4. Event Streaming (Kafka) ---
   kafka:
@@ -44,7 +54,7 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
@@ -55,6 +65,11 @@ services:
       KAFKA_NUM_PARTITIONS: 1
     networks:
       - neo-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
 
   # --- 5. FaaS (Python Impact Calculator) ---
   impact-function:
@@ -62,6 +77,80 @@ services:
     container_name: neo_faas
     ports:
       - "5001:5000"
+    networks:
+      - neo-network
+
+  # --- 6. Telemetry Ingest Service ---
+  telemetry-ingest:
+    build:
+      context: .
+      dockerfile: telemetry-ingest/Dockerfile
+    container_name: neo_telemetry
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - neo-network
+
+  # --- 7. Hazard Analyzer Service ---
+  hazard-analyzer:
+    build:
+      context: .
+      dockerfile: hazard-analyzer/Dockerfile
+    container_name: neo_hazard
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_RABBITMQ_HOST: rabbitmq
+    depends_on:
+      kafka:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - neo-network
+
+  # --- 8. Mission Control Service ---
+  mission-control:
+    build:
+      context: .
+      dockerfile: mission-control/Dockerfile
+    container_name: neo_mission
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/neo_sentinel
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_REDIS_HOST: redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - neo-network
+
+  # --- 9. API Gateway ---
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: neo_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      MISSION_SERVICE_URL: http://mission-control:8083
+      INGEST_SERVICE_URL: http://telemetry-ingest:8081
+      FAAS_SERVICE_URL: http://impact-function:5000
+    depends_on:
+      - mission-control
+      - telemetry-ingest
+      - impact-function
     networks:
       - neo-network
 
