@@ -5,13 +5,13 @@ import { MissionService, Alert, isDangerous, StreamEvent } from './services/miss
 import { forkJoin, Subscription } from 'rxjs';
 
 @Component({
-  selector: 'app-dashboard',
+  selector: 'app-hazard',
   standalone: true,
   imports: [CommonModule, HttpClientModule],
   template: `
     <div class="dashboard-container">
       <div class="dashboard-header">
-        <h2>🛡️ Mission Control Dashboard</h2>
+        <h2>✅ Manageable Hazards</h2>
         <div class="connection-status" [class.connected]="sseConnected">
           <span class="status-dot"></span>
           {{ sseConnected ? 'Live Updates Active' : 'Connecting...' }}
@@ -19,34 +19,23 @@ import { forkJoin, Subscription } from 'rxjs';
       </div>
       
       <div class="stats-bar">
-        <div class="stat-card">
-          <span class="stat-value">{{ alerts.length }}</span>
-          <span class="stat-label">Total Alerts</span>
-        </div>
-        <div class="stat-card danger">
-          <span class="stat-value">{{ dangerousCount }}</span>
-          <span class="stat-label">Critical Threats</span>
-        </div>
         <div class="stat-card safe">
-          <span class="stat-value">{{ safeCount }}</span>
-          <span class="stat-label">Monitored</span>
+          <span class="stat-value">{{ alerts.length }}</span>
+          <span class="stat-label">Monitored Objects</span>
         </div>
       </div>
       
-      <h3 class="section-title">Live Hazard Feed</h3>
+      <h3 class="section-title">Non-Critical Hazard Monitoring</h3>
       
-      <p *ngIf="loading" class="loading">Loading alerts...</p>
+      <p *ngIf="loading" class="loading">Loading hazards...</p>
       <p *ngIf="error" class="error">{{ error }}</p>
-      <p *ngIf="!loading && !error && alerts.length === 0" class="empty">No alerts at this time.</p>
+      <p *ngIf="!loading && !error && alerts.length === 0" class="empty">No manageable hazards detected.</p>
 
       <div class="alert-grid">
         <div *ngFor="let alert of alerts" 
-             class="alert-card" 
-             [class.dangerous]="checkDangerous(alert)"
-             [class.safe]="!checkDangerous(alert)"
-             [class.new-alert]="alert.isNew">
+             class="alert-card safe">
           <div class="alert-header">
-            <h4>{{ checkDangerous(alert) ? '🚨 COLLISION WARNING' : '✅ MONITORING' }}</h4>
+            <h4>✅ MONITORING</h4>
             <span class="alert-id">#{{ alert.id }}</span>
           </div>
           <p class="message">{{ alert.message }}</p>
@@ -70,7 +59,7 @@ import { forkJoin, Subscription } from 'rxjs';
             <div class="impact-energy">
               <strong>Impact Energy:</strong> {{ alert.impactEnergy }} Kilotons
             </div>
-            <span class="status-badge" [class.catastrophic]="alert.status === 'CATASTROPHIC'">
+            <span class="status-badge">
               {{ alert.status }}
             </span>
           </div>
@@ -97,7 +86,7 @@ import { forkJoin, Subscription } from 'rxjs';
     .dashboard-header h2 {
       font-size: 1.8rem;
       font-weight: 600;
-      color: #fff;
+      color: #4caf50;
     }
     
     .connection-status {
@@ -132,9 +121,10 @@ import { forkJoin, Subscription } from 'rxjs';
     
     .stats-bar {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: 1fr;
       gap: 16px;
       margin-bottom: 32px;
+      max-width: 300px;
     }
     
     .stat-card {
@@ -143,11 +133,6 @@ import { forkJoin, Subscription } from 'rxjs';
       padding: 20px;
       text-align: center;
       border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .stat-card.danger {
-      background: rgba(255, 82, 82, 0.1);
-      border-color: rgba(255, 82, 82, 0.3);
     }
     
     .stat-card.safe {
@@ -159,75 +144,57 @@ import { forkJoin, Subscription } from 'rxjs';
       display: block;
       font-size: 2.5rem;
       font-weight: 700;
-      color: #fff;
+      color: #4caf50;
     }
     
-    .stat-card.danger .stat-value { color: #ff5252; }
-    .stat-card.safe .stat-value { color: #4caf50; }
-    
     .stat-label {
-      display: block;
-      font-size: 0.85rem;
-      color: #888;
+      font-size: 0.9rem;
+      color: #999;
       margin-top: 4px;
     }
     
     .section-title {
       font-size: 1.2rem;
       margin-bottom: 16px;
-      color: #aaa;
+      color: #bbb;
     }
     
-    .loading, .error, .empty {
-      text-align: center;
-      padding: 40px;
+    .loading, .empty {
       color: #888;
+      font-style: italic;
+      padding: 40px;
+      text-align: center;
     }
     
-    .error { color: #ff5252; }
+    .error {
+      color: #ff5252;
+      background: rgba(255, 82, 82, 0.1);
+      padding: 16px;
+      border-radius: 8px;
+    }
     
     .alert-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-      gap: 16px;
+      gap: 20px;
     }
     
     .alert-card {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
       padding: 20px;
-      border-radius: 12px;
-      border-left: 4px solid;
+      border: 1px solid rgba(255, 255, 255, 0.08);
       transition: all 0.3s ease;
     }
     
     .alert-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    }
-    
-    .alert-card.new-alert {
-      animation: slideIn 0.5s ease-out;
-    }
-    
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-    
-    .alert-card.dangerous {
-      border-color: #ff5252;
-      background: linear-gradient(135deg, rgba(255, 82, 82, 0.15) 0%, rgba(255, 82, 82, 0.05) 100%);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
     
     .alert-card.safe {
-      border-color: #4caf50;
-      background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%);
+      border-color: rgba(76, 175, 80, 0.4);
+      background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.05) 100%);
     }
     
     .alert-header {
@@ -239,113 +206,151 @@ import { forkJoin, Subscription } from 'rxjs';
     
     .alert-header h4 {
       font-size: 1rem;
+      font-weight: 600;
+      color: #4caf50;
       margin: 0;
     }
-    
-    .alert-card.dangerous .alert-header h4 { color: #ff5252; }
-    .alert-card.safe .alert-header h4 { color: #4caf50; }
     
     .alert-id {
       font-size: 0.8rem;
       color: #666;
-      background: rgba(0, 0, 0, 0.2);
-      padding: 2px 8px;
-      border-radius: 4px;
+      font-family: monospace;
     }
     
     .message {
-      font-weight: 500;
-      margin-bottom: 12px;
-      line-height: 1.4;
+      color: #ccc;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 16px;
     }
     
     .telemetry {
       display: flex;
       gap: 16px;
       flex-wrap: wrap;
-      margin: 12px 0;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
     }
     
     .telemetry-item {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.9rem;
-      color: #aaa;
     }
     
     .telemetry-icon {
-      font-size: 1rem;
+      font-size: 1.1rem;
+    }
+    
+    .telemetry-value {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: #64b5f6;
     }
     
     .impact-info {
-      background: rgba(0, 0, 0, 0.2);
-      padding: 12px;
-      border-radius: 8px;
-      margin: 12px 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      margin-bottom: 12px;
     }
     
     .impact-energy {
       font-size: 0.9rem;
+      color: #81c784;
     }
     
     .status-badge {
       padding: 4px 12px;
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 0.8rem;
-      background: #4caf50;
-      color: white;
-    }
-    
-    .status-badge.catastrophic {
-      background: #ff5252;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: rgba(76, 175, 80, 0.2);
+      color: #4caf50;
     }
     
     .timestamp {
       display: block;
-      margin-top: 12px;
       color: #666;
       font-size: 0.8rem;
+      text-align: right;
     }
   `]
 })
-export class DashboardComponent implements OnInit, OnDestroy {
-  alerts: (Alert & { isNew?: boolean })[] = [];
+export class HazardComponent implements OnInit, OnDestroy {
+  alerts: Alert[] = [];
   loading = true;
-  error: string | null = null;
+  error = '';
   sseConnected = false;
-  
   private sseSubscription?: Subscription;
-
-  get dangerousCount(): number {
-    return this.alerts.filter(a => this.checkDangerous(a)).length;
-  }
-
-  get safeCount(): number {
-    return this.alerts.filter(a => !this.checkDangerous(a)).length;
-  }
 
   constructor(
     private missionService: MissionService,
     private cdr: ChangeDetectorRef
   ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadAlerts();
     this.subscribeToAlertStream();
   }
-  
-  ngOnDestroy() {
-    this.sseSubscription?.unsubscribe();
+
+  ngOnDestroy(): void {
+    if (this.sseSubscription) {
+      this.sseSubscription.unsubscribe();
+    }
   }
-  
-  subscribeToAlertStream() {
+
+  loadAlerts(): void {
+    this.missionService.getAlerts().subscribe({
+      next: (alerts) => {
+        // Process ALL alerts first, then filter for manageable ones after impact calculation
+        this.processAlerts(alerts);
+      },
+      error: (err) => {
+        this.error = 'Failed to load hazards: ' + (err.message || 'Unknown error');
+        this.loading = false;
+      }
+    });
+  }
+
+  processAlerts(alerts: Alert[]): void {
+    const alertsWithTelemetry = alerts.filter(a => a.diameterM && a.velocityKmS && a.distanceKm);
+    const impactRequests = alertsWithTelemetry.map(alert => this.missionService.calculateImpact(alert));
+
+    if (impactRequests.length > 0) {
+      forkJoin(impactRequests).subscribe({
+        next: (results) => {
+          alertsWithTelemetry.forEach(alert => {
+            const result = results.find(r => r.id === String(alert.id));
+            if (result) {
+              alert.impactEnergy = parseFloat(result.impact_energy);
+              alert.status = result.status;
+            }
+          });
+          // Filter for MANAGEABLE/safe alerts after impact calculation
+          this.alerts = alertsWithTelemetry.filter(a => !isDangerous(a));
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Impact calculation failed:', err);
+          this.alerts = [];
+          this.loading = false;
+        }
+      });
+    } else {
+      this.alerts = [];
+      this.loading = false;
+    }
+  }
+
+  subscribeToAlertStream(): void {
     this.sseSubscription = this.missionService.getAlertStream().subscribe({
       next: (event: StreamEvent) => {
         if (event.type === 'connected') {
@@ -362,92 +367,45 @@ export class DashboardComponent implements OnInit, OnDestroy {
         
         if (event.type === 'alert' && event.alert) {
           const alert = event.alert;
-          const exists = this.alerts.some(a => a.id === alert.id);
-          if (!exists) {
-            const newAlert = { ...alert, isNew: true };
-            this.alerts.unshift(newAlert);
-            
-            this.calculateImpactForAlert(newAlert);
-            
-            setTimeout(() => {
-              newAlert.isNew = false;
-              this.cdr.detectChanges();
-            }, 1000);
-            
-            this.cdr.detectChanges();
+          if (alert.diameterM && alert.velocityKmS && alert.distanceKm) {
+            this.processNewAlert(alert);
           }
         }
       },
-      error: (err) => {
-        console.error('SSE error:', err);
+      error: () => {
         this.sseConnected = false;
         this.cdr.detectChanges();
       }
     });
   }
 
-  loadAlerts() {
-    this.missionService.getAlerts().subscribe({
-      next: data => {
-        this.alerts = data.reverse();
-        this.loading = false;
-        this.error = null;
-        this.cdr.detectChanges();
-        
-        this.calculateImpacts();
-      },
-      error: err => {
-        this.loading = false;
-        this.error = 'Failed to load alerts. Is backend running?';
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  calculateImpacts() {
-    const alertsWithTelemetry = this.alerts.filter(
-      a => a.diameterM && a.velocityKmS && a.impactEnergy === undefined
-    );
-    
-    if (alertsWithTelemetry.length === 0) return;
-    
-    const requests = alertsWithTelemetry.map(alert => 
-      this.missionService.calculateImpact(alert)
-    );
-    
-    forkJoin(requests).subscribe({
-      next: results => {
-        results.forEach((result, index) => {
-          const alert = alertsWithTelemetry[index];
-          const energyMatch = result.impact_energy.match(/([\d.]+)/);
-          alert.impactEnergy = energyMatch ? parseFloat(energyMatch[1]) : 0;
+  processNewAlert(alert: Alert): void {
+    if (alert.diameterM && alert.velocityKmS && alert.distanceKm) {
+      this.missionService.calculateImpact(alert).subscribe({
+        next: (result) => {
+          alert.impactEnergy = parseFloat(result.impact_energy);
           alert.status = result.status;
-        });
-        this.cdr.detectChanges();
-      },
-      error: err => {
-        console.error('Failed to calculate impacts:', err);
-      }
-    });
-  }
-  
-  calculateImpactForAlert(alert: Alert & { isNew?: boolean }) {
-    if (!alert.diameterM || !alert.velocityKmS) return;
-    
-    this.missionService.calculateImpact(alert).subscribe({
-      next: result => {
-        const energyMatch = result.impact_energy.match(/([\d.]+)/);
-        alert.impactEnergy = energyMatch ? parseFloat(energyMatch[1]) : 0;
-        alert.status = result.status;
-        this.cdr.detectChanges();
-      },
-      error: err => {
-        console.error('Failed to calculate impact:', err);
-      }
-    });
+          // Only add if still manageable after impact calculation
+          if (!isDangerous(alert)) {
+            this.addAlertToList(alert);
+          }
+        },
+        error: () => {
+          this.addAlertToList(alert);
+        }
+      });
+    } else {
+      this.addAlertToList(alert);
+    }
   }
 
-  checkDangerous(alert: Alert): boolean {
-    return isDangerous(alert);
+  addAlertToList(alert: Alert): void {
+    const existingIndex = this.alerts.findIndex(a => a.id === alert.id);
+    if (existingIndex >= 0) {
+      this.alerts[existingIndex] = alert;
+    } else {
+      this.alerts.unshift(alert);
+    }
+    this.cdr.detectChanges();
   }
 }

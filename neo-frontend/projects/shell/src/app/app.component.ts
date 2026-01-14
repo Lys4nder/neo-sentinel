@@ -18,10 +18,10 @@ import { CommonModule } from '@angular/common';
             <span class="nav-icon">📊</span> Dashboard
           </a>
           <a routerLink="/telemetry" routerLinkActive="active">
-            <span class="nav-icon">📡</span> Telemetry
+            <span class="nav-icon">�</span> Critical Threats
           </a>
           <a routerLink="/hazards" routerLinkActive="active">
-            <span class="nav-icon">⚠️</span> Hazards
+            <span class="nav-icon">✅</span> Manageable
           </a>
         </nav>
         <div class="header-actions">

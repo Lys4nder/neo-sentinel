@@ -23,6 +23,11 @@ export interface ImpactResult {
   status: 'CATASTROPHIC' | 'MANAGEABLE';
 }
 
+export interface StreamEvent {
+  type: 'connected' | 'disconnected' | 'alert';
+  alert?: Alert;
+}
+
 export function isDangerous(alert: Alert): boolean {
   if (alert.status) {
     return alert.status === 'CATASTROPHIC';
@@ -44,34 +49,62 @@ export class MissionService {
   constructor(private http: HttpClient, private ngZone: NgZone) { }
 
   getAlerts(): Observable<Alert[]> {
-    return this.http.get<Alert[]>(this.alertsUrl).pipe(
-      map(alerts => alerts.slice(-10))
-    );
+    return this.http.get<Alert[]>(this.alertsUrl);
   }
 
-  getAlertStream(): Observable<Alert> {
+  getAlertStream(): Observable<StreamEvent> {
     return new Observable(observer => {
-      const eventSource = new EventSource(this.alertsStreamUrl);
-      
-      eventSource.onmessage = (event) => {
-        this.ngZone.run(() => {
-          try {
-            const alert = JSON.parse(event.data) as Alert;
-            observer.next(alert);
-          } catch (e) {
-            console.error('Error parsing SSE data:', e);
-          }
-        });
+      let eventSource: EventSource | null = null;
+      let reconnectAttempts = 0;
+      const maxReconnectAttempts = 5;
+      const reconnectDelay = 5000;
+      let reconnectTimeout: any;
+
+      const connect = () => {
+        eventSource = new EventSource(this.alertsStreamUrl);
+        
+        eventSource.onopen = () => {
+          reconnectAttempts = 0;
+          this.ngZone.run(() => {
+            observer.next({ type: 'connected' });
+          });
+        };
+        
+        eventSource.onmessage = (event) => {
+          this.ngZone.run(() => {
+            try {
+              const alert = JSON.parse(event.data) as Alert;
+              observer.next({ type: 'alert', alert });
+            } catch (e) {
+              console.error('Error parsing SSE data:', e);
+            }
+          });
+        };
+        
+        eventSource.onerror = () => {
+          this.ngZone.run(() => {
+            observer.next({ type: 'disconnected' });
+            if (eventSource) {
+              eventSource.close();
+            }
+            
+            if (reconnectAttempts < maxReconnectAttempts) {
+              reconnectAttempts++;
+              reconnectTimeout = setTimeout(connect, reconnectDelay);
+            }
+          });
+        };
       };
-      
-      eventSource.onerror = (error) => {
-        this.ngZone.run(() => {
-          console.error('SSE connection error:', error);
-        });
-      };
+
+      connect();
       
       return () => {
-        eventSource.close();
+        if (reconnectTimeout) {
+          clearTimeout(reconnectTimeout);
+        }
+        if (eventSource) {
+          eventSource.close();
+        }
       };
     });
   }
