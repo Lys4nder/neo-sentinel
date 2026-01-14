@@ -2,6 +2,9 @@
 server:
   port: 8080  # The ONE port to rule them all
 
+api:
+  key: ${API_KEY:neo-sentinel-secret-key}
+
 spring:
   application:
     name: api-gateway

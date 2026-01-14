@@ -135,18 +135,17 @@ services:
     networks:
       - neo-network
 
-  # --- 9. API Gateway ---
-  api-gateway:
+  # --- 9. API Gateway (Instance 1) ---
+  api-gateway-1:
     build:
       context: ./neo-backend
       dockerfile: api-gateway/Dockerfile
-    container_name: neo_gateway
-    ports:
-      - "8080:8080"
+    container_name: neo_gateway_1
     environment:
       MISSION_SERVICE_URL: http://mission-control:8083
       INGEST_SERVICE_URL: http://telemetry-ingest:8081
       FAAS_SERVICE_URL: http://impact-function:5000
+      API_KEY: ${API_KEY:-neo-sentinel-secret-key}
     depends_on:
       - mission-control
       - telemetry-ingest
@@ -154,14 +153,51 @@ services:
     networks:
       - neo-network
 
-  # --- 10. Frontend (Angular + Nginx) ---
+  # --- 9b. API Gateway (Instance 2) ---
+  api-gateway-2:
+    build:
+      context: ./neo-backend
+      dockerfile: api-gateway/Dockerfile
+    container_name: neo_gateway_2
+    environment:
+      MISSION_SERVICE_URL: http://mission-control:8083
+      INGEST_SERVICE_URL: http://telemetry-ingest:8081
+      FAAS_SERVICE_URL: http://impact-function:5000
+      API_KEY: ${API_KEY:-neo-sentinel-secret-key}
+    depends_on:
+      - mission-control
+      - telemetry-ingest
+      - impact-function
+    networks:
+      - neo-network
+
+  # --- 10. Nginx Load Balancer ---
+  nginx-lb:
+    image: nginx:alpine
+    container_name: neo_loadbalancer
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api-gateway-1
+      - api-gateway-2
+    networks:
+      - neo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # --- 11. Frontend (Angular + Nginx) ---
   frontend:
     build: ./neo-frontend
     container_name: neo_frontend
     ports:
       - "4200:80"
     depends_on:
-      - api-gateway
+      - nginx-lb
     networks:
       - neo-network
 
