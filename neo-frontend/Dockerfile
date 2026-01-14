@@ -10,12 +10,20 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the Angular app for production
-RUN npm run build
+# Build both microfrontends
+RUN npm run build:all
 
 # Production stage with nginx
 FROM nginx:alpine
-COPY --from=build /app/dist/neo-frontend/browser /usr/share/nginx/html
+
+# Copy shell microfrontend
+COPY --from=build /app/dist/shell /usr/share/nginx/html/shell
+
+# Copy dashboard microfrontend
+COPY --from=build /app/dist/dashboard /usr/share/nginx/html/dashboard
+
+# Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

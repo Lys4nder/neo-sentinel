@@ -6,36 +6,28 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "neo-frontend": {
+    "shell": {
       "projectType": "application",
-      "schematics": {
-        "@schematics/angular:component": {
-          "standalone": false
-        },
-        "@schematics/angular:directive": {
-          "standalone": false
-        },
-        "@schematics/angular:pipe": {
-          "standalone": false
-        }
-      },
-      "root": "",
-      "sourceRoot": "src",
+      "root": "projects/shell",
+      "sourceRoot": "projects/shell/src",
       "prefix": "app",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "browser": "src/main.ts",
-            "tsConfig": "tsconfig.app.json",
+            "browser": "projects/shell/src/main.ts",
+            "outputPath": "dist/shell",
+            "index": "projects/shell/src/index.html",
+            "polyfills": ["zone.js"],
+            "tsConfig": "projects/shell/tsconfig.app.json",
             "assets": [
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "projects/shell/public"
               }
             ],
             "styles": [
-              "src/styles.css"
+              "projects/shell/src/styles.css"
             ]
           },
           "configurations": {
@@ -44,12 +36,7 @@
                 {
                   "type": "initial",
                   "maximumWarning": "500kB",
-                  "maximumError": "1MB"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumError": "2MB"
                 }
               ],
               "outputHashing": "all"
@@ -66,10 +53,65 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "neo-frontend:build:production"
+              "buildTarget": "shell:build:production"
             },
             "development": {
-              "buildTarget": "neo-frontend:build:development"
+              "buildTarget": "shell:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        }
+      }
+    },
+    "dashboard": {
+      "projectType": "application",
+      "root": "projects/dashboard",
+      "sourceRoot": "projects/dashboard/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/dashboard/src/main.ts",
+            "outputPath": "dist/dashboard",
+            "index": "projects/dashboard/src/index.html",
+            "polyfills": ["zone.js"],
+            "tsConfig": "projects/dashboard/tsconfig.app.json",
+            "assets": [],
+            "styles": [
+              "projects/dashboard/src/styles.css"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "2MB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "dashboard:build:production"
+            },
+            "development": {
+              "buildTarget": "dashboard:build:development"
             }
           },
           "defaultConfiguration": "development"
