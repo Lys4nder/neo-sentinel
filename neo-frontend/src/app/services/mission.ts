@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 
@@ -38,14 +38,45 @@ export function isDangerous(alert: Alert): boolean {
 })
 export class MissionService {
   private alertsUrl = '/api/mission/alerts';
+  private alertsStreamUrl = '/api/mission/alerts/stream';
   private impactUrl = '/api/impact/calculate';
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private ngZone: NgZone) { }
 
   getAlerts(): Observable<Alert[]> {
     return this.http.get<Alert[]>(this.alertsUrl).pipe(
       map(alerts => alerts.slice(-10))
     );
+  }
+
+  // SSE stream for real-time alerts
+  getAlertStream(): Observable<Alert> {
+    return new Observable(observer => {
+      const eventSource = new EventSource(this.alertsStreamUrl);
+      
+      eventSource.onmessage = (event) => {
+        this.ngZone.run(() => {
+          try {
+            const alert = JSON.parse(event.data) as Alert;
+            observer.next(alert);
+          } catch (e) {
+            console.error('Error parsing SSE data:', e);
+          }
+        });
+      };
+      
+      eventSource.onerror = (error) => {
+        this.ngZone.run(() => {
+          console.error('SSE connection error:', error);
+          // Don't complete the observable, allow reconnection
+        });
+      };
+      
+      // Cleanup on unsubscribe
+      return () => {
+        eventSource.close();
+      };
+    });
   }
 
   calculateImpact(alert: Alert): Observable<ImpactResult> {
