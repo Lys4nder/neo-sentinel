@@ -3,8 +3,14 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
+    "start": "npm run start:all",
+    "start:shell": "ng serve shell --port 4200",
+    "start:dashboard": "ng serve dashboard --port 4201",
+    "start:all": "concurrently \"npm run start:shell\" \"npm run start:dashboard\"",
+    "build": "npm run build:all",
+    "build:shell": "ng build shell --configuration production",
+    "build:dashboard": "ng build dashboard --configuration production",
+    "build:all": "npm run build:dashboard && npm run build:shell",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -30,12 +36,14 @@
     "@angular/platform-browser": "^21.0.0",
     "@angular/router": "^21.0.0",
     "rxjs": "~7.8.0",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "zone.js": "^0.15.1"
   },
   "devDependencies": {
     "@angular/build": "^21.0.4",
     "@angular/cli": "^21.0.4",
     "@angular/compiler-cli": "^21.0.0",
+    "concurrently": "^8.2.2",
     "jsdom": "^27.1.0",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"

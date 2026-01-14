@@ -190,12 +190,14 @@ services:
       timeout: 5s
       retries: 3
 
-  # --- 11. Frontend (Angular + Nginx) ---
+  # --- 11. Frontend (Angular Microfrontends + Nginx) ---
   frontend:
     build: ./neo-frontend
     container_name: neo_frontend
     ports:
       - "4200:80"
+    environment:
+      - NODE_ENV=production
     depends_on:
       - nginx-lb
     networks:
