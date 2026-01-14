@@ -80,19 +80,15 @@ Neo Sentinel is a distributed microservices architecture designed to safeguard E
 ### Prerequisites
 
 - Docker & Docker Compose
-- Git
 
 ### Run with Docker (Recommended)
 
 ```bash
-# Clone the repository
 git clone https://github.com/Lys4nder/neo-sentinel.git
 cd neo-sentinel
 
-# Start all services
 docker compose up -d --build
 
-# View logs
 docker compose logs -f
 ```
 
@@ -176,7 +172,3 @@ neo-sentinel/
 │   └── impact-function/        # Python Flask FaaS
 └── neo-frontend/               # Angular 21 dashboard
 ```
-
-## License
-
-MIT

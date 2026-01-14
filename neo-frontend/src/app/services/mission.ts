@@ -44,9 +44,7 @@ export class MissionService {
   constructor(private http: HttpClient, private ngZone: NgZone) { }
 
   getAlerts(): Observable<Alert[]> {
-    return this.http.get<Alert[]>(this.alertsUrl).pipe(
-      map(alerts => alerts.slice(-10))
-    );
+    return this.http.get<Alert[]>(this.alertsUrl);
   }
 
   // SSE stream for real-time alerts
