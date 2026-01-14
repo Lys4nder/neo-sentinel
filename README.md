@@ -47,6 +47,30 @@ Neo Sentinel is a distributed microservices architecture designed to safeguard E
 | Kafka | 9092 | Event streaming for telemetry data |
 | RabbitMQ | 5672, 15672 | Message broker for hazard alerts |
 
+### Load Balancing
+
+The system uses **Nginx** as a reverse proxy and load balancer in front of two API Gateway instances:
+
+```
+                         ┌─────────────────┐
+                    ┌───▶│  api-gateway-1  │
+┌──────────────┐    │    └─────────────────┘
+│  Nginx (LB)  │────┤    
+│  Port: 8080  │    │    ┌─────────────────┐
+└──────────────┘    └───▶│  api-gateway-2  │
+                         └─────────────────┘
+```
+
+| Feature | Configuration |
+|---------|---------------|
+| **Algorithm** | `least_conn` - routes to the gateway with fewest active connections |
+| **SSE Support** | Buffering disabled, 24-hour timeouts for long-lived connections |
+| **Security Headers** | `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection` |
+| **Compression** | Gzip enabled for JSON, CSS, JavaScript, event streams |
+| **Health Endpoint** | `/health` returns load balancer status |
+
+> **Note:** Spring Boot services take 30-60 seconds to fully initialize. During startup, you may see 502 errors until all API Gateway instances are ready.
+
 ## System Logic and Data Flow
 
 ```
@@ -149,12 +173,12 @@ curl http://localhost:8080/api/mission/alerts \
 curl http://localhost:8080/api/mission/alerts/stream
 
 
-### Impact Calculator (FaaS)
 ```bash
 curl -X POST http://localhost:8080/api/impact/calculate \
   -H "Content-Type: application/json" \
   -H "X-API-Key: neo-sentinel-secret-key" \
   -d '{"velocityKmS":15.5,"diameterM":370}'
+```
 ```
 
 ## Project Structure
