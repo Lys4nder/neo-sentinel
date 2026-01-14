@@ -171,14 +171,14 @@ curl http://localhost:8080/api/mission/alerts \
 
 # Subscribe to real-time alerts via SSE (no auth required)
 curl http://localhost:8080/api/mission/alerts/stream
+```
 
-
+### Impact Calculator (FaaS)
 ```bash
 curl -X POST http://localhost:8080/api/impact/calculate \
   -H "Content-Type: application/json" \
   -H "X-API-Key: neo-sentinel-secret-key" \
   -d '{"velocityKmS":15.5,"diameterM":370}'
-```
 ```
 
 ## Project Structure
