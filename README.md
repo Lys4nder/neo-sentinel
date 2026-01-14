@@ -10,7 +10,7 @@ Neo Sentinel is a distributed microservices architecture designed to safeguard E
 
 | Layer | Technology |
 |-------|------------|
-| **Frontend** | Angular 19, TypeScript |
+| **Frontend** | Angular 21, TypeScript |
 | **Load Balancer** | Nginx |
 | **API Gateway** | Spring Cloud Gateway (WebFlux) |
 | **Backend Services** | Java 25, Spring Boot 4 |
@@ -152,12 +152,6 @@ curl http://localhost:8080/api/mission/alerts \
 # Subscribe to real-time alerts via SSE (no auth required)
 curl http://localhost:8080/api/mission/alerts/stream
 
-# Send test telemetry (requires API key)
-curl -X POST http://localhost:8080/api/ingest/telemetry \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: neo-sentinel-secret-key" \
-  -d '{"id":"AST-001","name":"Apophis","distanceKm":50000,"velocityKmS":15.5,"diameterM":370}'
-```
 
 ### Impact Calculator (FaaS)
 ```bash
@@ -180,7 +174,7 @@ neo-sentinel/
 │   ├── hazard-analyzer/        # Kafka consumer + RabbitMQ publisher
 │   ├── mission-control/        # REST API + SSE + PostgreSQL + Redis
 │   └── impact-function/        # Python Flask FaaS
-└── neo-frontend/               # Angular 19 dashboard
+└── neo-frontend/               # Angular 21 dashboard
 ```
 
 ## License
