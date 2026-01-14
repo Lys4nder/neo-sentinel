@@ -37,8 +37,8 @@ export function isDangerous(alert: Alert): boolean {
   providedIn: 'root'
 })
 export class MissionService {
-  private alertsUrl = 'http://localhost:8080/api/mission/alerts';
-  private impactUrl = 'http://localhost:8080/api/impact/calculate';
+  private alertsUrl = '/api/mission/alerts';
+  private impactUrl = '/api/impact/calculate';
 
   constructor(private http: HttpClient) { }
 

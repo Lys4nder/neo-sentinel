@@ -5,7 +5,7 @@ spring:
   application:
     name: mission-control
   datasource:
-    url: jdbc:postgresql://localhost:5432/neo_sentinel
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/neo_sentinel}
     username: neo_user
     password: neo_password
   jpa:
@@ -13,7 +13,11 @@ spring:
       ddl-auto: update  # Automatically creates the 'alerts' table
     show-sql: false
   rabbitmq:
-    host: localhost
+    host: ${SPRING_RABBITMQ_HOST:localhost}
     port: 5672
     username: admin
     password: admin
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: 6379
